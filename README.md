@@ -29,7 +29,7 @@ A colorful, mobile-first scoreboard app for the "I Quit" card game with real-tim
 pip install -r requirements.txt
 
 # Set environment variables (optional)
-export AWS_REGION=me-central-1
+export AWS_REGION=eu-west-1
 export GAMES_TABLE=iquit_games
 export EVENTS_TABLE=iquit_events
 
