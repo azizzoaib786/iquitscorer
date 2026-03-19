@@ -1,0 +1,44 @@
+<div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-200 shadow-xl p-4 sm:p-5">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🏆</span>
+      <h2 class="text-lg font-bold text-amber-900">Leaderboard</h2>
+    </div>
+    <span class="text-xs text-amber-700 font-medium bg-white/50 px-2 py-1 rounded-lg">Updates instantly</span>
+  </div>
+
+  <div class="mt-3 overflow-hidden rounded-xl border-2 border-amber-200 shadow-md">
+    <table class="w-full text-sm">
+      <thead class="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 font-bold">
+        <tr>
+          <th class="text-left px-3 py-2 w-10">#</th>
+          <th class="text-left px-3 py-2">Player</th>
+          <th class="text-right px-3 py-2 w-20">Total</th>
+          <th class="text-left px-3 py-2 w-20">Status</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white">
+        {% for r in board %}
+        <tr class="border-t border-amber-100 hover:bg-amber-50/50 transition-colors">
+          <td class="px-3 py-2 font-bold">
+            {% if r.rank == 1 %}🥇
+            {% elif r.rank == 2 %}🥈
+            {% elif r.rank == 3 %}🥉
+            {% else %}{{ r.rank }}
+            {% endif %}
+          </td>
+          <td class="px-3 py-2 font-bold text-slate-800">{{ r.player }}</td>
+          <td class="px-3 py-2 text-right font-bold text-amber-900">{{ r.total }}</td>
+          <td class="px-3 py-2">
+            {% if r.is_out %}
+              <span class="px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-rose-100 to-orange-100 text-rose-700 border-2 border-rose-300 shadow-sm">❌ OUT</span>
+            {% else %}
+              <span class="px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 border-2 border-emerald-300 shadow-sm">✅ IN</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>I Quit Scoreboard</title>
+  </head>
+  <body class="bg-gradient-to-br from-violet-100 via-pink-100 to-orange-100 min-h-screen">
+    <div class="max-w-xl mx-auto p-4">
+      <div class="bg-gradient-to-br from-white to-violet-50 rounded-3xl shadow-2xl border-2 border-violet-200 p-6">
+        <div class="text-center mb-6">
+          <div class="text-5xl mb-3">🎮</div>
+          <h1 class="text-3xl font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">I Quit — Scoreboard</h1>
+          <p class="text-violet-700 mt-2 font-medium">Mobile-first scoring with real-time updates</p>
+        </div>
+
+        <form class="mt-6 space-y-4" method="post" action="/games">
+          <div>
+            <label class="text-sm font-semibold text-violet-900 flex items-center gap-2">
+              <span>🏷️</span> Game name
+            </label>
+            <input name="name" required class="mt-2 w-full rounded-xl border-2 border-violet-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-200 px-4 py-3 text-lg transition-all" placeholder="Friday Night"/>
+          </div>
+          <div>
+            <label class="text-sm font-semibold text-violet-900 flex items-center gap-2">
+              <span>🎯</span> Target score
+            </label>
+            <input name="target" type="number" min="1" value="150" required class="mt-2 w-full rounded-xl border-2 border-violet-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-200 px-4 py-3 text-lg transition-all"/>
+          </div>
+          <button class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all">✨ Create game</button>
+        </form>
+      </div>
+
+      {% if recent_games %}
+      <div class="mt-4 bg-gradient-to-br from-white to-cyan-50 rounded-3xl shadow-2xl border-2 border-cyan-200 p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-2xl">📜</span>
+          <h2 class="text-xl font-bold text-cyan-900">Recent Games</h2>
+        </div>
+        <div class="space-y-2">
+          {% for game in recent_games %}
+          <a href="/games/{{ game.game_id }}" class="block bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 rounded-xl border-2 border-cyan-200 hover:border-cyan-400 p-4 transition-all shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold text-slate-800">🎮 {{ game.name }}</div>
+                <div class="text-xs text-cyan-700 mt-1">
+                  <span class="font-medium">Target: {{ game.target }}</span>
+                  {% if game.players %}
+                    <span class="mx-1">•</span>
+                    <span>{{ game.players|length }} player(s)</span>
+                  {% endif %}
+                  {% if game.rounds %}
+                    <span class="mx-1">•</span>
+                    <span>{{ game.rounds|length }} round(s)</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="text-cyan-600 text-xl">→</div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="mt-4 text-center">
+        <p class="text-sm text-violet-600 font-medium">
+          💻 Developed by <span class="font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">Aziz Zoaib</span>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

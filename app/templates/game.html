@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="/static/app.js"></script>
+    <title>{{ game.name }} — I Quit</title>
+  </head>
+  <body class="bg-gradient-to-br from-violet-100 via-pink-100 to-orange-100 min-h-screen">
+    <div class="max-w-3xl mx-auto p-3 sm:p-4">
+      <div class="bg-gradient-to-br from-violet-50 to-pink-50 rounded-2xl border-2 border-violet-200 shadow-xl p-4 sm:p-5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-2xl">🎮</span>
+              <h1 class="text-2xl font-bold text-violet-900">{{ game.name }}</h1>
+            </div>
+            <p class="text-violet-700 font-medium">Target: <b class="text-pink-600">{{ game.target }}</b> <span class="text-sm">(total ≥ target = OUT)</span></p>
+          </div>
+          <div class="flex gap-2">
+            <a href="/" class="px-3 py-2 rounded-xl border-2 border-violet-200 bg-white hover:bg-violet-50 text-violet-800 font-semibold shadow-sm hover:shadow-md transition-all">🏠 New</a>
+
+            <form
+              hx-post="/games/{{ game.game_id }}/undo"
+              hx-target="#round-panel"
+              hx-swap="outerHTML"
+              class="m-0"
+            >
+              <input type="hidden" name="round_id" value="{{ selected_round_id }}"/>
+              <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white font-bold shadow-md hover:shadow-lg transition-all">↩️ Undo</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 sm:mt-4">
+        {% include "partials/round_panel.html" %}
+      </div>
+
+      <div class="mt-4 text-center pb-2">
+        <p class="text-sm text-violet-600 font-medium">
+          💻 Developed by <span class="font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">Aziz Zoaib</span>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

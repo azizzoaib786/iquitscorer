@@ -1,0 +1,24 @@
+<div class="flex gap-2 overflow-x-auto pb-1">
+  {% for r in game.rounds %}
+    <form
+      class="shrink-0"
+      hx-post="/games/{{ game.game_id }}/rounds/select"
+      hx-target="#round-panel"
+      hx-swap="outerHTML"
+    >
+      <input type="hidden" name="round_id" value="{{ r.round_id }}"/>
+      <button
+        class="px-4 py-2 rounded-xl border-2 text-sm font-bold shadow-sm hover:shadow-md transition-all
+               {% if r.round_id == selected_round_id %} 
+                 bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-600
+               {% else %} 
+                 bg-white text-purple-800 border-purple-200 hover:border-purple-400 hover:bg-purple-50
+               {% endif %}">
+        {{ r.name }}
+        {% if r.locked %}
+          <span class="ml-1 text-xs opacity-90">🔒</span>
+        {% endif %}
+      </button>
+    </form>
+  {% endfor %}
+</div>

@@ -1,0 +1,151 @@
+<div class="space-y-4" id="round-panel">
+  {% if flash %}
+    <div class="bg-white rounded-2xl border shadow-sm p-3">
+      {% set msg = flash %}
+      {% include "partials/flash.html" %}
+    </div>
+  {% endif %}
+
+  <div id="leaderboard">
+    {% include "partials/leaderboard.html" %}
+  </div>
+
+  <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-lg p-4 sm:p-5 space-y-4">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">👥</span>
+      <h2 class="text-lg font-bold text-blue-900">Players</h2>
+    </div>
+    <form
+      class="flex gap-2"
+      hx-post="/games/{{ game.game_id }}/players"
+      hx-target="#round-panel"
+      hx-swap="outerHTML"
+    >
+      <input name="player_name" required placeholder="Add player name"
+             class="flex-1 rounded-xl border-2 border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 px-4 py-3 text-lg transition-all"/>
+      <button class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 font-semibold shadow-md hover:shadow-lg transition-all">Add</button>
+    </form>
+    <p class="text-xs text-blue-700 bg-white/50 rounded-lg px-3 py-2">
+      Players: {{ game.players | join(", ") if game.players else "None" }}
+    </p>
+  </div>
+
+  <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200 shadow-lg p-4 sm:p-5 space-y-4">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🎯</span>
+        <h2 class="text-lg font-bold text-purple-900">Rounds</h2>
+      </div>
+      <form
+        class="flex gap-2"
+        hx-post="/games/{{ game.game_id }}/rounds"
+        hx-target="#round-panel"
+        hx-swap="outerHTML"
+      >
+        <input name="round_name" required placeholder="Round name"
+               class="w-40 sm:w-64 rounded-xl border-2 border-purple-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 px-3 py-2 transition-all"/>
+        <button class="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-2 font-semibold shadow-md hover:shadow-lg transition-all">Add</button>
+      </form>
+    </div>
+
+    {% if game.rounds %}
+      {% include "partials/rounds_tabs.html" %}
+    {% else %}
+      <p class="text-purple-700 text-sm bg-white/50 rounded-lg px-3 py-2">Add a round to start scoring.</p>
+    {% endif %}
+  </div>
+
+  {% for r in game.rounds %}
+    {% if r.round_id == selected_round_id %}
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 shadow-lg p-4 sm:p-5 space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-2xl">🎲</span>
+              <h2 class="text-lg font-bold text-emerald-900">{{ r.name }}</h2>
+            </div>
+            <p class="text-xs text-emerald-700">Enter delta for this round. Totals update instantly.</p>
+          </div>
+
+          <div class="flex gap-2">
+            {% if not r.locked %}
+            <form
+              hx-post="/games/{{ game.game_id }}/rounds/end"
+              hx-target="#round-panel"
+              hx-swap="outerHTML"
+            >
+              <input type="hidden" name="round_id" value="{{ r.round_id }}"/>
+              <button
+                class="rounded-xl px-3 py-2 font-bold border-2 shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-orange-600 to-red-600 text-white border-orange-600 hover:from-orange-700 hover:to-red-700">
+                🏁 End Round
+              </button>
+            </form>
+            {% endif %}
+
+            <form
+              hx-post="/games/{{ game.game_id }}/rounds/toggle-lock"
+              hx-target="#round-panel"
+              hx-swap="outerHTML"
+            >
+              <input type="hidden" name="round_id" value="{{ r.round_id }}"/>
+              <button
+                class="rounded-xl px-3 py-2 font-semibold border-2 shadow-md hover:shadow-lg transition-all
+                       {% if r.locked %} 
+                         bg-white text-slate-800 border-slate-300 hover:bg-slate-50
+                       {% else %} 
+                         bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-600 hover:from-emerald-700 hover:to-teal-700
+                       {% endif %}">
+                {% if r.locked %}🔒 Unlock{% else %}🔓 Lock{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {% if r.locked %}
+          <div class="rounded-xl border-2 border-rose-300 bg-gradient-to-r from-rose-50 to-orange-50 text-rose-800 px-4 py-3 text-sm font-medium shadow-sm">
+            🔒 This round is locked. Unlock to edit.
+          </div>
+        {% endif %}
+
+        <div class="space-y-2">
+          {% for p in game.players %}
+          <div class="flex items-center gap-2 rounded-xl border-2 border-emerald-200 bg-white/60 backdrop-blur-sm p-3 hover:border-emerald-300 transition-all shadow-sm hover:shadow-md">
+            <div class="flex-1">
+              <div class="font-bold text-slate-800">{{ p }}</div>
+              <div class="text-xs text-emerald-700 font-medium">
+                Round total: {{ round_scores.get(r.round_id, {}).get(p, 0) }}
+              </div>
+            </div>
+
+            <form
+              class="flex items-center gap-2"
+              hx-post="/games/{{ game.game_id }}/scores"
+              hx-target="#round-panel"
+              hx-swap="outerHTML"
+              hx-on::after-request="window.clearScoreInput(this)"
+            >
+              <input type="hidden" name="round_id" value="{{ r.round_id }}"/>
+              <input type="hidden" name="player" value="{{ p }}"/>
+
+              <input
+                name="delta"
+                type="number"
+                inputmode="numeric"
+                placeholder="0"
+                {% if r.locked %} disabled {% endif %}
+                class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all"
+              />
+
+              <button
+                {% if r.locked %} disabled {% endif %}
+                class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-3 font-bold shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                Add
+              </button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
