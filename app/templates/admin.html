@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <title>Admin Panel — I Quit Scoreboard</title>
+  </head>
+  <body class="bg-gradient-to-br from-rose-100 via-orange-100 to-pink-100 min-h-screen">
+    <div class="max-w-4xl mx-auto p-4">
+      <div class="bg-gradient-to-br from-white to-rose-50 rounded-3xl shadow-2xl border-2 border-rose-300 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <span class="text-4xl">👑</span>
+            <div>
+              <h1 class="text-2xl font-bold text-rose-900">Admin Panel</h1>
+              <p class="text-sm text-rose-700">Manage games and users</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <a href="/change-password" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold shadow-md hover:shadow-lg transition-all">
+              🔐 Password
+            </a>
+            <a href="/" class="px-4 py-2 rounded-xl bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white font-bold shadow-md hover:shadow-lg transition-all">
+              ← Back to Home
+            </a>
+          </div>
+        </div>
+
+        <!-- Games Management -->
+        <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-300 p-5 mb-4">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">🎮</span>
+            <h2 class="text-xl font-bold text-amber-900">All Games ({{ games|length }})</h2>
+          </div>
+
+          {% if games %}
+          <div class="space-y-2">
+            {% for game in games %}
+            <div class="bg-white rounded-xl border-2 border-amber-200 p-4 flex items-center justify-between hover:shadow-md transition-all">
+              <div class="flex-1">
+                <div class="font-bold text-slate-800">{{ game.name }}</div>
+                <div class="text-xs text-slate-600">
+                  Target: {{ game.target }} | 
+                  Players: {{ game.players|length }} | 
+                  Rounds: {{ game.rounds|length }} |
+                  Created: {{ game.created_at[:10] }}
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <a href="/games/{{ game.game_id }}" class="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all">
+                  👁️ View
+                </a>
+                <form
+                  hx-post="/admin/games/{{ game.game_id }}/delete"
+                  hx-target="closest .bg-white"
+                  hx-swap="outerHTML"
+                  hx-confirm="Are you sure you want to delete '{{ game.name }}'? This cannot be undone."
+                >
+                  <button type="submit" class="px-3 py-2 rounded-lg bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all">
+                    🗑️ Delete
+                  </button>
+                </form>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-amber-700 text-sm">No games yet.</p>
+          {% endif %}
+        </div>
+
+        <!-- Game Details Management -->
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-300 p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">⚙️</span>
+            <h2 class="text-xl font-bold text-emerald-900">Game Management</h2>
+          </div>
+          
+          <form class="flex gap-2 mb-4">
+            <input type="text" placeholder="Enter Game ID" name="gid" required class="flex-1 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 px-4 py-2"/>
+            <button type="submit" formaction="/admin/game-details" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md hover:shadow-lg transition-all">
+              📋 Load Game
+            </button>
+          </form>
+
+          <div class="text-xs text-emerald-700 bg-emerald-50/50 rounded-lg p-3">
+            💡 <b>Tip:</b> Enter a game ID above to manage players in that specific game.
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-center pb-2">
+        <p class="text-sm text-rose-600 font-medium">
+          💻 Developed by <span class="font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">Aziz Zoaib</span>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

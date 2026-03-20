@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta http-equiv="refresh" content="10">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>{{ game.name }} — Live Scores</title>
+  </head>
+  <body class="bg-gradient-to-br from-violet-100 via-pink-100 to-orange-100 min-h-screen">
+    <div class="max-w-3xl mx-auto p-3 sm:p-4">
+      <div class="bg-gradient-to-br from-violet-50 to-pink-50 rounded-2xl border-2 border-violet-200 shadow-xl p-4 sm:p-5">
+        <div class="text-center">
+          <div class="flex items-center justify-center gap-2 mb-2">
+            <span class="text-3xl">📺</span>
+            <h1 class="text-2xl font-bold text-violet-900">{{ game.name }}</h1>
+          </div>
+          <p class="text-violet-700 font-medium">Target: <b class="text-pink-600">{{ game.target }}</b></p>
+          <p class="text-xs text-violet-600 mt-2">🔄 Auto-refreshing every 10 seconds</p>
+        </div>
+      </div>
+
+      <div class="mt-3 sm:mt-4">
+        <div class="space-y-4">
+          <!-- Leaderboard -->
+          <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-200 shadow-xl p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">🏆</span>
+                <h2 class="text-lg font-bold text-amber-900">Live Leaderboard</h2>
+              </div>
+            </div>
+
+            <div class="overflow-hidden rounded-xl border-2 border-amber-200 shadow-md">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-900 font-bold">
+                  <tr>
+                    <th class="text-left px-3 py-2 w-10">#</th>
+                    <th class="text-left px-3 py-2">Player</th>
+                    <th class="text-right px-3 py-2 w-20">Total</th>
+                    <th class="text-left px-3 py-2 w-20">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white">
+                  {% for r in board %}
+                  <tr class="border-t border-amber-100 hover:bg-amber-50/50 transition-colors">
+                    <td class="px-3 py-2 font-bold">
+                      {% if r.rank == 1 %}🥇
+                      {% elif r.rank == 2 %}🥈
+                      {% elif r.rank == 3 %}🥉
+                      {% else %}{{ r.rank }}
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-2 font-bold text-slate-800">{{ r.player }}</td>
+                    <td class="px-3 py-2 text-right font-bold text-amber-900">{{ r.total }}</td>
+                    <td class="px-3 py-2">
+                      {% if r.is_out %}
+                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-rose-100 to-orange-100 text-rose-700 border-2 border-rose-300 shadow-sm">❌ OUT</span>
+                      {% else %}
+                        <span class="px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 border-2 border-emerald-300 shadow-sm">✅ IN</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Rounds -->
+          {% if game.rounds %}
+          <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200 shadow-lg p-4 sm:p-5 space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🎯</span>
+              <h2 class="text-lg font-bold text-purple-900">Rounds</h2>
+            </div>
+            
+            <div class="flex gap-2 overflow-x-auto pb-1">
+              {% for r in game.rounds %}
+                <div class="shrink-0 px-4 py-2 rounded-xl border-2 text-sm font-bold shadow-sm
+                     {% if r.round_id == selected_round_id %} 
+                       bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-600
+                     {% else %} 
+                       bg-white text-purple-800 border-purple-200
+                     {% endif %}">
+                  {{ r.name }}
+                  {% if r.locked %}
+                    <span class="ml-1 text-xs opacity-90">🔒</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Current Round Scores -->
+          {% for r in game.rounds %}
+            {% if r.round_id == selected_round_id %}
+              <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 shadow-lg p-4 sm:p-5 space-y-4">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-2xl">🎲</span>
+                  <h2 class="text-lg font-bold text-emerald-900">{{ r.name }} - Scores</h2>
+                </div>
+
+                <div class="space-y-2">
+                  {% for p in game.players %}
+                  <div class="flex items-center justify-between gap-2 rounded-xl border-2 border-emerald-200 bg-white/60 backdrop-blur-sm p-3 shadow-sm">
+                    <div class="flex-1">
+                      <div class="font-bold text-slate-800">{{ p }}</div>
+                      <div class="text-xs text-emerald-700 font-medium">
+                        {% set deltas = round_deltas.get(r.round_id, {}).get(p, []) %}
+                        {% if deltas is defined and deltas|length > 0 %}
+                          Round scores: {{ deltas | join(', ') }}
+                        {% else %}
+                          No scores yet
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mt-4 text-center pb-2">
+        <p class="text-sm text-violet-600 font-medium">
+          💻 Developed by <span class="font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">Aziz Zoaib</span>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

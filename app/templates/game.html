@@ -18,19 +18,13 @@
               <h1 class="text-2xl font-bold text-violet-900">{{ game.name }}</h1>
             </div>
             <p class="text-violet-700 font-medium">Target: <b class="text-pink-600">{{ game.target }}</b> <span class="text-sm">(total ≥ target = OUT)</span></p>
+            <div class="mt-2 flex items-center gap-2">
+              <input type="text" readonly value="https://52patta.duckdns.org/live/{{ game.game_id }}" id="liveLink" class="flex-1 text-xs px-2 py-1 bg-white border border-violet-300 rounded-lg font-mono text-violet-700">
+              <button onclick="navigator.clipboard.writeText(document.getElementById('liveLink').value); this.innerText='✓ Copied!'; setTimeout(()=>this.innerText='📋 Copy', 2000)" class="px-3 py-1 text-xs font-bold bg-gradient-to-r from-violet-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all">📋 Copy</button>
+            </div>
           </div>
           <div class="flex gap-2">
-            <a href="/" class="px-3 py-2 rounded-xl border-2 border-violet-200 bg-white hover:bg-violet-50 text-violet-800 font-semibold shadow-sm hover:shadow-md transition-all">🏠 New</a>
-
-            <form
-              hx-post="/games/{{ game.game_id }}/undo"
-              hx-target="#round-panel"
-              hx-swap="outerHTML"
-              class="m-0"
-            >
-              <input type="hidden" name="round_id" value="{{ selected_round_id }}"/>
-              <button class="px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white font-bold shadow-md hover:shadow-lg transition-all">↩️ Undo</button>
-            </form>
+            <a href="/" class="px-3 py-2 rounded-xl border-2 border-violet-200 bg-white hover:bg-violet-50 text-violet-800 font-semibold shadow-sm hover:shadow-md transition-all">🏠 Home</a>
           </div>
         </div>
       </div>

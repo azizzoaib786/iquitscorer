@@ -25,6 +25,24 @@ def per_round_scores(events: List[dict]) -> Dict[str, Dict[str, int]]:
     return out
 
 
+def per_round_deltas(events: List[dict]) -> Dict[str, Dict[str, List[int]]]:
+    # Get list of individual deltas per player per round
+    out: Dict[str, Dict[str, List[int]]] = {}
+    for e in events:
+        if e.get("undone"):
+            continue
+        rid = e["round_id"]
+        player = e["player"]
+        delta = int(e["delta"])
+        
+        if rid not in out:
+            out[rid] = {}
+        if player not in out[rid]:
+            out[rid][player] = []
+        out[rid][player].append(delta)
+    return out
+
+
 def leaderboard(players: List[str], totals: Dict[str, int], target: int) -> List[dict]:
     # Generate ranked leaderboard
     rows = []

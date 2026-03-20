@@ -6,30 +6,12 @@
     </div>
   {% endif %}
 
+  <!-- 1. Leaderboard First -->
   <div id="leaderboard">
     {% include "partials/leaderboard.html" %}
   </div>
 
-  <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-lg p-4 sm:p-5 space-y-4">
-    <div class="flex items-center gap-2">
-      <span class="text-2xl">👥</span>
-      <h2 class="text-lg font-bold text-blue-900">Players</h2>
-    </div>
-    <form
-      class="flex gap-2"
-      hx-post="/games/{{ game.game_id }}/players"
-      hx-target="#round-panel"
-      hx-swap="outerHTML"
-    >
-      <input name="player_name" required placeholder="Add player name"
-             class="flex-1 rounded-xl border-2 border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 px-4 py-3 text-lg transition-all"/>
-      <button class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 font-semibold shadow-md hover:shadow-lg transition-all">Add</button>
-    </form>
-    <p class="text-xs text-blue-700 bg-white/50 rounded-lg px-3 py-2">
-      Players: {{ game.players | join(", ") if game.players else "None" }}
-    </p>
-  </div>
-
+  <!-- 2. Rounds Section -->
   <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-200 shadow-lg p-4 sm:p-5 space-y-4">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
@@ -55,6 +37,7 @@
     {% endif %}
   </div>
 
+  <!-- 3. Scoring Section (for selected round) -->
   {% for r in game.rounds %}
     {% if r.round_id == selected_round_id %}
       <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 shadow-lg p-4 sm:p-5 space-y-4">
@@ -64,7 +47,7 @@
               <span class="text-2xl">🎲</span>
               <h2 class="text-lg font-bold text-emerald-900">{{ r.name }}</h2>
             </div>
-            <p class="text-xs text-emerald-700">Enter delta for this round. Totals update instantly.</p>
+            <p class="text-xs text-emerald-700">Enter scores (use negative values like -10 to deduct points)</p>
           </div>
 
           <div class="flex gap-2">
@@ -107,45 +90,99 @@
           </div>
         {% endif %}
 
-        <div class="space-y-2">
-          {% for p in game.players %}
-          <div class="flex items-center gap-2 rounded-xl border-2 border-emerald-200 bg-white/60 backdrop-blur-sm p-3 hover:border-emerald-300 transition-all shadow-sm hover:shadow-md">
-            <div class="flex-1">
-              <div class="font-bold text-slate-800">{{ p }}</div>
-              <div class="text-xs text-emerald-700 font-medium">
-                Round total: {{ round_scores.get(r.round_id, {}).get(p, 0) }}
+        <!-- Batch Scoring Form -->
+        <form
+          id="batch-score-form"
+          hx-post="/games/{{ game.game_id }}/scores/batch"
+          hx-target="#round-panel"
+          hx-swap="outerHTML"
+          hx-on::after-request="window.clearBatchScoreInputs()"
+        >
+          <input type="hidden" name="round_id" value="{{ r.round_id }}"/>
+          
+          <div class="space-y-2">
+            {% for p in game.players %}
+            <div class="flex items-center gap-2 rounded-xl border-2 border-emerald-200 bg-white/60 backdrop-blur-sm p-3 hover:border-emerald-300 transition-all shadow-sm">
+              <div class="flex-1">
+                <div class="font-bold text-slate-800">{{ p }}</div>
+                <div class="text-xs text-emerald-700 font-medium">
+                  {% set deltas = round_deltas.get(r.round_id, {}).get(p, []) %}
+                  {% if deltas is defined and deltas|length > 0 %}
+                    Round scores: {{ deltas | join(', ') }}
+                  {% else %}
+                    No scores yet
+                  {% endif %}
+                </div>
               </div>
-            </div>
-
-            <form
-              class="flex items-center gap-2"
-              hx-post="/games/{{ game.game_id }}/scores"
-              hx-target="#round-panel"
-              hx-swap="outerHTML"
-              hx-on::after-request="window.clearScoreInput(this)"
-            >
-              <input type="hidden" name="round_id" value="{{ r.round_id }}"/>
-              <input type="hidden" name="player" value="{{ p }}"/>
 
               <input
-                name="delta"
+                name="delta_{{ loop.index0 }}"
+                data-player="{{ p }}"
                 type="number"
                 inputmode="numeric"
                 placeholder="0"
                 {% if r.locked %} disabled {% endif %}
-                class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all"
+                class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
               />
-
-              <button
-                {% if r.locked %} disabled {% endif %}
-                class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-3 font-bold shadow-md hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                Add
-              </button>
-            </form>
+              <input type="hidden" name="player_{{ loop.index0 }}" value="{{ p }}"/>
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
+
+          <button
+            type="submit"
+            {% if r.locked %} disabled {% endif %}
+            class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-4 text-lg font-bold shadow-lg hover:shadow-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+            ✨ Add All Scores
+          </button>
+        </form>
       </div>
     {% endif %}
   {% endfor %}
+
+  <!-- 4. Add Players Section (Last) -->
+  <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-lg p-4 sm:p-5 space-y-4">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">👥</span>
+      <h2 class="text-lg font-bold text-blue-900">Players</h2>
+    </div>
+    <form
+      class="flex gap-2"
+      hx-post="/games/{{ game.game_id }}/players"
+      hx-target="#round-panel"
+      hx-swap="outerHTML"
+    >
+      <input name="player_name" required placeholder="Add players (e.g., Aziz, MK, BL)"
+             class="flex-1 rounded-xl border-2 border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 px-4 py-3 text-lg transition-all"/>
+      <button class="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 font-semibold shadow-md hover:shadow-lg transition-all">Add</button>
+    </form>
+    
+    {% if game.players %}
+    <div class="space-y-2">
+      {% for p in game.players %}
+      <div class="flex items-center justify-between rounded-lg border border-blue-200 bg-white/70 px-3 py-2">
+        <span class="font-medium text-blue-900">{{ p }}</span>
+        {% if user.is_admin %}
+        <form
+          hx-post="/games/{{ game.game_id }}/players/remove"
+          hx-target="#round-panel"
+          hx-swap="outerHTML"
+          hx-confirm="Remove player '{{ p }}' from the game? This will delete all their scores."
+          class="m-0"
+        >
+          <input type="hidden" name="player_name" value="{{ p }}"/>
+          <button type="submit" class="px-2 py-1 rounded-lg bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white text-xs font-bold shadow-sm hover:shadow-md transition-all">
+            🗑️ Remove
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-xs text-blue-700 bg-white/50 rounded-lg px-3 py-2">
+      No players yet
+    </p>
+    {% endif %}
+  </div>
 </div>

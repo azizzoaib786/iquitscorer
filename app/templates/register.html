@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Register — I Quit Scoreboard</title>
+  </head>
+  <body class="bg-gradient-to-br from-violet-100 via-pink-100 to-orange-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+      <div class="bg-gradient-to-br from-violet-50 to-pink-50 rounded-3xl border-2 border-violet-300 shadow-2xl p-8">
+        <div class="text-center mb-6">
+          <div class="text-6xl mb-3">🎮</div>
+          <h1 class="text-3xl font-bold text-violet-900 mb-2">I Quit Scoreboard</h1>
+          <p class="text-violet-700">Create your account</p>
+        </div>
+
+        <form method="post" action="/register" class="space-y-4">
+          <div>
+            <label class="block text-sm font-bold text-violet-900 mb-1">Username</label>
+            <input 
+              type="text" 
+              name="username" 
+              required 
+              autofocus
+              minlength="3"
+              class="w-full rounded-xl border-2 border-violet-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-200 px-4 py-3 transition-all"
+              placeholder="Choose a username"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-violet-900 mb-1">Password</label>
+            <input 
+              type="password" 
+              name="password" 
+              required 
+              minlength="6"
+              class="w-full rounded-xl border-2 border-violet-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-200 px-4 py-3 transition-all"
+              placeholder="Choose a password (min 6 chars)"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            class="w-full rounded-xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white px-6 py-4 text-lg font-bold shadow-lg hover:shadow-xl transition-all">
+            ✨ Create Account
+          </button>
+        </form>
+
+        <div class="mt-6 text-center">
+          <p class="text-sm text-violet-700">
+            Already have an account? 
+            <a href="/login" class="font-bold text-pink-600 hover:text-pink-700 underline">Login here</a>
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-4 text-center">
+        <p class="text-sm text-violet-600 font-medium">
+          💻 Developed by <span class="font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">Aziz Zoaib</span>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -2,17 +2,52 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, Cookie, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .db import put_game, get_game, update_game, list_events, put_event, mark_event_undone, list_games
-from .logic import totals_by_player, per_round_scores, leaderboard
+from .db import (put_game, get_game, update_game, list_events, put_event,
+                 list_games, create_user, get_user_by_username, get_user_by_id, list_games_by_user, delete_game, update_user_password)
+from .logic import totals_by_player, per_round_scores, leaderboard, per_round_deltas
+from .auth import hash_password, verify_password, create_session_token, verify_session_token
 
 app = FastAPI(title="I Quit Scoreboard (HTMX)")
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    # Custom 404 page
+    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+
+
+def get_current_user(request: Request) -> Optional[Dict[str, Any]]:
+    # Get current user from session cookie
+    token = request.cookies.get("session")
+    if not token:
+        return None
+    user_id = verify_session_token(token)
+    if not user_id:
+        return None
+    return get_user_by_id(user_id)
+
+
+def require_auth(request: Request) -> Dict[str, Any]:
+    # Require authenticated user
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return user
+
+
+def require_admin(request: Request) -> Dict[str, Any]:
+    # Require admin user
+    user = require_auth(request)
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
 
 
 def now_ts() -> str:
@@ -26,6 +61,18 @@ def must_game(game_id: str) -> Dict[str, Any]:
     if not g:
         raise HTTPException(status_code=404, detail="Game not found")
     return g
+
+
+def check_game_access(request: Request, game_id: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    # Check if user can access game (returns user and game)
+    user = require_auth(request)
+    game = must_game(game_id)
+    
+    # Admins can access all games, users only their own
+    if not user.get("is_admin") and game.get("user_id") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    return user, game
 
 
 def round_locked(game: Dict[str, Any], round_id: str) -> bool:
@@ -49,22 +96,164 @@ def compute_view(game: Dict[str, Any], selected_round_id: Optional[str] = None) 
     
     board = leaderboard(game.get("players", []), totals, int(game["target"]))
     round_scores = per_round_scores(ev)
-    return {"events": ev, "totals": totals, "board": board, "round_scores": round_scores}
+    round_deltas = per_round_deltas(ev)
+    return {"events": ev, "totals": totals, "board": board, "round_scores": round_scores, "round_deltas": round_deltas}
 
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     # Homepage with game history
-    recent_games = list_games(limit=10)
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    
+    # Show user's games only (admins see all)
+    if user.get("is_admin"):
+        recent_games = list_games(limit=50)
+    else:
+        recent_games = list_games_by_user(user["user_id"], limit=50)
+    
     return templates.TemplateResponse("home.html", {
         "request": request,
+        "user": user,
         "recent_games": recent_games
     })
 
 
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    # Login page
+    user = get_current_user(request)
+    if user:
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login")
+async def login(response: Response, username: str = Form(...), password: str = Form(...)):
+    # Authenticate user
+    user = get_user_by_username(username)
+    if not user or not verify_password(password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Create session
+    token = create_session_token(user["user_id"])
+    response = RedirectResponse("/", status_code=303)
+    response.set_cookie(key="session", value=token, httponly=True, max_age=86400 * 7)
+    return response
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    # Registration page
+    user = get_current_user(request)
+    if user:
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.post("/register")
+async def register(response: Response, username: str = Form(...), password: str = Form(...)):
+    # Create new user
+    if get_user_by_username(username):
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    user_id = uuid.uuid4().hex
+    password_hash = hash_password(password)
+    create_user(user_id, username, password_hash, is_admin=False)
+    
+    # Auto-login after registration
+    token = create_session_token(user_id)
+    response = RedirectResponse("/", status_code=303)
+    response.set_cookie(key="session", value=token, httponly=True, max_age=86400 * 7)
+    return response
+
+
+@app.get("/logout")
+def logout():
+    # Logout user
+    response = RedirectResponse("/login", status_code=303)
+    response.delete_cookie("session")
+    return response
+
+
+@app.get("/change-password", response_class=HTMLResponse)
+def change_password_page(request: Request):
+    # Change password page
+    user = require_auth(request)
+    return templates.TemplateResponse("change_password.html", {
+        "request": request,
+        "user": user
+    })
+
+
+@app.post("/change-password")
+def change_password(request: Request, 
+                   current_password: str = Form(...),
+                   new_password: str = Form(...),
+                   confirm_password: str = Form(...)):
+    # Update user password
+    user = require_auth(request)
+    
+    # Verify current password
+    if not verify_password(current_password, user["password_hash"]):
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "user": user,
+            "error": "Current password is incorrect"
+        })
+    
+    # Check new passwords match
+    if new_password != confirm_password:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "user": user,
+            "error": "New passwords do not match"
+        })
+    
+    # Check password length
+    if len(new_password) < 6:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "user": user,
+            "error": "Password must be at least 6 characters"
+        })
+    
+    # Update password
+    new_hash = hash_password(new_password)
+    update_user_password(user["user_id"], new_hash)
+    
+    return templates.TemplateResponse("change_password.html", {
+        "request": request,
+        "user": user,
+        "success": "Password updated successfully!"
+    })
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_panel(request: Request):
+    # Admin panel
+    admin = require_admin(request)
+    all_games = list_games(limit=100)
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "user": admin,
+        "games": all_games
+    })
+
+
+@app.post("/admin/games/{game_id}/delete")
+async def admin_delete_game(request: Request, game_id: str):
+    # Delete game (admin only)
+    require_admin(request)
+    delete_game(game_id)
+    return HTMLResponse("", status_code=200)
+
+
 @app.post("/games")
-def create_game(name: str = Form(...), target: int = Form(150)):
+def create_game(request: Request, name: str = Form(...), target: int = Form(150)):
     # Create new game
+    user = require_auth(request)
     game_id = uuid.uuid4().hex
     put_game({
         "game_id": game_id,
@@ -73,13 +262,19 @@ def create_game(name: str = Form(...), target: int = Form(150)):
         "players": [],
         "rounds": [],
         "created_at": now_ts(),
+        "user_id": user["user_id"],
     })
     return RedirectResponse(f"/games/{game_id}", status_code=303)
 
 
 @app.get("/games/{game_id}", response_class=HTMLResponse)
 def game_page(request: Request, game_id: str, round_id: Optional[str] = None):
+    user = require_auth(request)
     game = must_game(game_id)
+    
+    # Check ownership (admins can access all games)
+    if not user.get("is_admin") and game.get("user_id") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     selected_round_id = round_id
     if not selected_round_id and game.get("rounds"):
@@ -89,6 +284,26 @@ def game_page(request: Request, game_id: str, round_id: Optional[str] = None):
 
     return templates.TemplateResponse("game.html", {
         "request": request,
+        "user": user,
+        "game": game,
+        "selected_round_id": selected_round_id,
+        **view
+    })
+
+
+@app.get("/live/{game_id}", response_class=HTMLResponse)
+def live_game(request: Request, game_id: str, round_id: Optional[str] = None):
+    # Read-only live view for spectators
+    game = must_game(game_id)
+
+    selected_round_id = round_id
+    if not selected_round_id and game.get("rounds"):
+        selected_round_id = game["rounds"][0]["round_id"]
+
+    view = compute_view(game, selected_round_id)
+
+    return templates.TemplateResponse("live.html", {
+        "request": request,
         "game": game,
         "selected_round_id": selected_round_id,
         **view
@@ -97,37 +312,89 @@ def game_page(request: Request, game_id: str, round_id: Optional[str] = None):
 
 @app.post("/games/{game_id}/players", response_class=HTMLResponse)
 def add_player(request: Request, game_id: str, player_name: str = Form(...)):
-    # Add player to game
-    game = must_game(game_id)
-    name = player_name.strip()
-    if not name:
+    # Add player(s) to game (supports comma-separated names)
+    user, game = check_game_access(request, game_id)
+    input_names = player_name.strip()
+    if not input_names:
         raise HTTPException(400, "Empty name")
     
-    # Check for duplicates
-    if name in game.get("players", []):
-        game2 = must_game(game_id)
-        selected = (game2["rounds"][0]["round_id"] if game2.get("rounds") else None)
-        view = compute_view(game2, selected)
-        return templates.TemplateResponse("partials/round_panel.html", {
-            "request": request, "game": game2, "selected_round_id": selected, **view,
-            "flash": "Player already exists."
-        })
+    # Split by comma and clean up names
+    names = [n.strip() for n in input_names.split(",") if n.strip()]
+    
+    if not names:
+        raise HTTPException(400, "No valid names provided")
+    
+    existing_players = game.get("players", [])
+    new_players = []
+    duplicates = []
+    
+    for name in names:
+        if name in existing_players:
+            duplicates.append(name)
+        elif name not in new_players:  # Avoid duplicates in input
+            new_players.append(name)
+    
+    # Add new players
+    if new_players:
+        updated_players = existing_players + new_players
+        update_game(game_id, "SET players = :p", {":p": updated_players})
+    
+    game2 = must_game(game_id)
+    selected = (game2["rounds"][0]["round_id"] if game2.get("rounds") else None)
+    view = compute_view(game2, selected)
+    
+    # Build flash message
+    flash_msg = ""
+    if new_players:
+        flash_msg = f"✅ Added {len(new_players)} player(s): {', '.join(new_players)}"
+    if duplicates:
+        flash_msg += f" | ⚠️ Skipped duplicates: {', '.join(duplicates)}"
+    if not flash_msg:
+        flash_msg = "No players added."
+    
+    return templates.TemplateResponse("partials/round_panel.html", {
+        "request": request, "user": user, "game": game2, "selected_round_id": selected, **view,
+        "flash": flash_msg
+    })
 
-    players = game.get("players", []) + [name]
+
+@app.post("/games/{game_id}/players/remove", response_class=HTMLResponse)
+def remove_player(request: Request, game_id: str, player_name: str = Form(...)):
+    # Remove player from game (admin only)
+    user, game = check_game_access(request, game_id)
+    
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    name = player_name.strip()
+    players = game.get("players", [])
+    
+    if name not in players:
+        raise HTTPException(400, "Player not found")
+    
+    # Remove player from list
+    players.remove(name)
     update_game(game_id, "SET players = :p", {":p": players})
-
+    
+    # Delete all events for this player
+    ev = list_events(game_id)
+    from .db import events
+    for e in ev:
+        if e.get("player") == name:
+            events.delete_item(Key={"game_id": game_id, "ts": e["ts"]})
+    
     game2 = must_game(game_id)
     selected = (game2["rounds"][0]["round_id"] if game2.get("rounds") else None)
     view = compute_view(game2, selected)
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game2, "selected_round_id": selected, **view,
-        "flash": "Player added."
+        "request": request, "user": user, "game": game2, "selected_round_id": selected, **view,
+        "flash": f"Removed player '{name}' and all their scores."
     })
 
 
 @app.post("/games/{game_id}/rounds", response_class=HTMLResponse)
 def add_round(request: Request, game_id: str, round_name: str = Form(...)):
-    game = must_game(game_id)
+    user, game = check_game_access(request, game_id)
     rn = round_name.strip()
     if not rn:
         raise HTTPException(400, "Empty round name")
@@ -139,23 +406,23 @@ def add_round(request: Request, game_id: str, round_name: str = Form(...)):
     game2 = must_game(game_id)
     view = compute_view(game2, rid)
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game2, "selected_round_id": rid, **view,
+        "request": request, "user": user, "game": game2, "selected_round_id": rid, **view,
         "flash": "Round added."
     })
 
 
 @app.post("/games/{game_id}/rounds/select", response_class=HTMLResponse)
 def select_round(request: Request, game_id: str, round_id: str = Form(...)):
-    game = must_game(game_id)
+    user, game = check_game_access(request, game_id)
     view = compute_view(game, round_id)
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game, "selected_round_id": round_id, **view
+        "request": request, "user": user, "game": game, "selected_round_id": round_id, **view
     })
 
 
 @app.post("/games/{game_id}/rounds/toggle-lock", response_class=HTMLResponse)
 def toggle_lock(request: Request, game_id: str, round_id: str = Form(...)):
-    game = must_game(game_id)
+    user, game = check_game_access(request, game_id)
     rounds = game.get("rounds", [])
     found = False
     for r in rounds:
@@ -171,7 +438,7 @@ def toggle_lock(request: Request, game_id: str, round_id: str = Form(...)):
     game2 = must_game(game_id)
     view = compute_view(game2, round_id)
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game2, "selected_round_id": round_id, **view,
+        "request": request, "user": user, "game": game2, "selected_round_id": round_id, **view,
         "flash": "Round lock updated."
     })
 
@@ -179,7 +446,7 @@ def toggle_lock(request: Request, game_id: str, round_id: str = Form(...)):
 @app.post("/games/{game_id}/rounds/end", response_class=HTMLResponse)
 def end_round(request: Request, game_id: str, round_id: str = Form(...)):
     # End round and lock it
-    game = must_game(game_id)
+    user, game = check_game_access(request, game_id)
     rounds = game.get("rounds", [])
     found = False
     for r in rounds:
@@ -200,7 +467,7 @@ def end_round(request: Request, game_id: str, round_id: str = Form(...)):
     flash_msg = "Round ended and locked." + (" 🎉 Game Over! All players are out!" if all_out else "")
     
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game2, "selected_round_id": round_id, **view,
+        "request": request, "user": user, "game": game2, "selected_round_id": round_id, **view,
         "flash": flash_msg
     })
 
@@ -211,7 +478,7 @@ def add_score(request: Request, game_id: str,
               player: str = Form(...),
               delta: int = Form(...)):
     # Add score delta to player
-    game = must_game(game_id)
+    user, game = check_game_access(request, game_id)
 
     if player not in game.get("players", []):
         raise HTTPException(400, "Unknown player")
@@ -238,32 +505,80 @@ def add_score(request: Request, game_id: str,
         flash_msg = "🎉 Game Over! All players reached the target!"
     
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game2, "selected_round_id": round_id, **view,
+        "request": request, "user": user, "game": game2, "selected_round_id": round_id, **view,
         "flash": flash_msg
     })
 
 
-@app.post("/games/{game_id}/undo", response_class=HTMLResponse)
-def undo(request: Request, game_id: str, round_id: Optional[str] = Form(None)):
-    must_game(game_id)
-    ev = list_events(game_id)
-
-    undone_one = False
-    for e in reversed(ev):
-        if not e.get("undone"):
-            mark_event_undone(game_id, e["ts"], True)
-            undone_one = True
+@app.post("/games/{game_id}/scores/batch", response_class=HTMLResponse)
+async def add_scores_batch(request: Request, game_id: str):
+    # Batch add scores for multiple players
+    user, game = check_game_access(request, game_id)
+    form_data = await request.form()
+    
+    round_id = form_data.get("round_id")
+    if not round_id:
+        raise HTTPException(400, "Missing round_id")
+    
+    if round_locked(game, round_id):
+        raise HTTPException(409, "Round is locked")
+    
+    # Process all player scores
+    added_count = 0
+    i = 0
+    while True:
+        player_key = f"player_{i}"
+        delta_key = f"delta_{i}"
+        
+        if player_key not in form_data:
             break
+            
+        player = form_data.get(player_key)
+        delta_str = form_data.get(delta_key, "").strip()
+        
+        # Default to 0 if empty
+        delta = int(delta_str) if delta_str else 0
+        
+        if player not in game.get("players", []):
+            raise HTTPException(400, f"Unknown player: {player}")
+        
+        put_event({
+            "game_id": game_id,
+            "ts": now_ts(),
+            "round_id": round_id,
+            "player": player,
+            "delta": delta,
+            "undone": False
+        })
+        added_count += 1
+        i += 1
+    
+    game2 = must_game(game_id)
+    view = compute_view(game2, round_id)
+    
+    # Auto-detect game over
+    all_out = all(entry["is_out"] for entry in view["board"])
+    flash_msg = None
+    if all_out:
+        flash_msg = "🎉 Game Over! All players reached the target!"
+    elif added_count > 0:
+        flash_msg = f"✅ Added scores for {added_count} player(s)"
+    
+    return templates.TemplateResponse("partials/round_panel.html", {
+        "request": request, "user": user, "game": game2, "selected_round_id": round_id, **view,
+        "flash": flash_msg
+    })
 
     game2 = must_game(game_id)
-
-    selected = round_id
-    if not selected and game2.get("rounds"):
-        selected = game2["rounds"][0]["round_id"]
-
-    view = compute_view(game2, selected)
-
+    view = compute_view(game2, round_id)
+    
+    # Auto-detect game over
+    all_out = all(entry["is_out"] for entry in view["board"])
+    flash_msg = None
+    if all_out:
+        flash_msg = "🎉 Game Over! All players reached the target!"
+    
     return templates.TemplateResponse("partials/round_panel.html", {
-        "request": request, "game": game2, "selected_round_id": selected, **view,
-        "flash": ("Undone last action." if undone_one else "Nothing to undo.")
+        "request": request, "game": game2, "selected_round_id": round_id, **view,
+        "flash": flash_msg
     })
