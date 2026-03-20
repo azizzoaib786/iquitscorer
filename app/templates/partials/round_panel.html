@@ -116,13 +116,22 @@
               </div>
 
               <div class="flex items-center gap-1">
-                <button
-                  type="button"
-                  onclick="toggleSign(this)"
-                  class="px-2 py-2 rounded-lg bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 text-white font-bold shadow-sm transition-all"
-                  {% if r.locked %} disabled {% endif %}>
-                  +/-
-                </button>
+                <div class="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onclick="incrementScore(this, 1)"
+                    class="px-2 py-1 rounded bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-sm transition-all"
+                    {% if r.locked %} disabled {% endif %}>
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    onclick="incrementScore(this, -1)"
+                    class="px-2 py-1 rounded bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-bold text-xs shadow-sm transition-all"
+                    {% if r.locked %} disabled {% endif %}>
+                    ▼
+                  </button>
+                </div>
                 <input
                   name="delta_{{ loop.index0 }}"
                   data-player="{{ p }}"

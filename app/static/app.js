@@ -8,10 +8,11 @@ window.clearBatchScoreInputs = function() {
   inputs.forEach(input => input.value = "");
 };
 
-window.toggleSign = function(button) {
-  const input = button.nextElementSibling;
+window.incrementScore = function(button, amount) {
+  const container = button.closest('.flex.items-center.gap-1');
+  const input = container.querySelector('input[type="number"]');
   if (!input) return;
   
-  const value = parseFloat(input.value) || 0;
-  input.value = -value;
+  const currentValue = parseInt(input.value) || 0;
+  input.value = currentValue + amount;
 };
