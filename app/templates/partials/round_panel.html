@@ -115,36 +115,16 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-1">
-                <div class="flex flex-col gap-1">
-                  <button
-                    type="button"
-                    ontouchstart="incrementScore(this, 1); return false;"
-                    onclick="incrementScore(this, 1); return false;"
-                    class="px-2 py-1 rounded bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
-                    {% if r.locked %} disabled {% endif %}>
-                    ▲
-                  </button>
-                  <button
-                    type="button"
-                    ontouchstart="incrementScore(this, -1); return false;"
-                    onclick="incrementScore(this, -1); return false;"
-                    class="px-2 py-1 rounded bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
-                    {% if r.locked %} disabled {% endif %}>
-                    ▼
-                  </button>
-                </div>
-                <input
-                  name="delta_{{ loop.index0 }}"
-                  data-player="{{ p }}"
-                  type="number"
-                  pattern="[0-9]*"
-                  inputmode="numeric"
-                  placeholder="0"
-                  {% if r.locked %} disabled {% endif %}
-                  class="w-20 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
-                />
-              </div>
+              <input
+                name="delta_{{ loop.index0 }}"
+                data-player="{{ p }}"
+                type="text"
+                pattern="-?[0-9]*"
+                inputmode="numeric"
+                placeholder="0"
+                {% if r.locked %} disabled {% endif %}
+                class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
+              />
               <input type="hidden" name="player_{{ loop.index0 }}" value="{{ p }}"/>
             </div>
             {% endfor %}
