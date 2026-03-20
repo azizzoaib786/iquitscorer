@@ -119,15 +119,17 @@
                 <div class="flex flex-col gap-1">
                   <button
                     type="button"
-                    onclick="incrementScore(this, 1)"
-                    class="px-2 py-1 rounded bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-sm transition-all"
+                    ontouchstart="incrementScore(this, 1); return false;"
+                    onclick="incrementScore(this, 1); return false;"
+                    class="px-2 py-1 rounded bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
                     {% if r.locked %} disabled {% endif %}>
                     ▲
                   </button>
                   <button
                     type="button"
-                    onclick="incrementScore(this, -1)"
-                    class="px-2 py-1 rounded bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-bold text-xs shadow-sm transition-all"
+                    ontouchstart="incrementScore(this, -1); return false;"
+                    onclick="incrementScore(this, -1); return false;"
+                    class="px-2 py-1 rounded bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
                     {% if r.locked %} disabled {% endif %}>
                     ▼
                   </button>
