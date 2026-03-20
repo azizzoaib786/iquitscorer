@@ -115,16 +115,26 @@
                 </div>
               </div>
 
-              <input
-                name="delta_{{ loop.index0 }}"
-                data-player="{{ p }}"
-                type="text"
-                pattern="-?[0-9]*"
-                inputmode="numeric"
-                placeholder="0"
-                {% if r.locked %} disabled {% endif %}
-                class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
-              />
+              <div class="relative">
+                <input
+                  name="delta_{{ loop.index0 }}"
+                  data-player="{{ p }}"
+                  type="text"
+                  pattern="-?[0-9]*"
+                  inputmode="numeric"
+                  placeholder="0"
+                  {% if r.locked %} disabled {% endif %}
+                  class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 pr-8 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
+                />
+                <button
+                  type="button"
+                  ontouchstart="event.preventDefault(); var inp = this.previousElementSibling; inp.value = (inp.value && inp.value.startsWith('-')) ? inp.value.substring(1) : '-' + (inp.value || '0');"
+                  onclick="var inp = this.previousElementSibling; inp.value = (inp.value && inp.value.startsWith('-')) ? inp.value.substring(1) : '-' + (inp.value || '0');"
+                  {% if r.locked %} disabled {% endif %}
+                  class="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded bg-slate-400 hover:bg-slate-500 text-white text-xs font-bold flex items-center justify-center">
+                  ±
+                </button>
+              </div>
               <input type="hidden" name="player_{{ loop.index0 }}" value="{{ p }}"/>
             </div>
             {% endfor %}
