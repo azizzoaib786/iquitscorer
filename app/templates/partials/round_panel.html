@@ -102,10 +102,17 @@
           
           <div class="space-y-2">
             {% for p in game.players %}
-            <div class="flex items-center gap-2 rounded-xl border-2 border-emerald-200 bg-white/60 backdrop-blur-sm p-3 hover:border-emerald-300 transition-all shadow-sm">
+            {% set player_total = totals.get(p, 0) %}
+            {% set is_out = player_total >= game.target %}
+            <div class="flex items-center gap-2 rounded-xl border-2 {% if is_out %}border-rose-300 bg-rose-50/60{% else %}border-emerald-200 bg-white/60{% endif %} backdrop-blur-sm p-3 hover:border-emerald-300 transition-all shadow-sm">
               <div class="flex-1">
-                <div class="font-bold text-slate-800">{{ p }}</div>
-                <div class="text-xs text-emerald-700 font-medium">
+                <div class="font-bold {% if is_out %}text-rose-800{% else %}text-slate-800{% endif %}">
+                  {{ p }}
+                  {% if is_out %}
+                    <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-rose-200 text-rose-700 font-bold">OUT</span>
+                  {% endif %}
+                </div>
+                <div class="text-xs {% if is_out %}text-rose-600{% else %}text-emerald-700{% endif %} font-medium">
                   {% set deltas = round_deltas.get(r.round_id, {}).get(p, []) %}
                   {% if deltas is defined and deltas|length > 0 %}
                     Round scores: {{ deltas | join(', ') }}
@@ -115,6 +122,7 @@
                 </div>
               </div>
 
+              {% if not is_out %}
               <div class="relative">
                 <input
                   name="delta_{{ loop.index0 }}"
@@ -135,6 +143,7 @@
                   ±
                 </button>
               </div>
+              {% endif %}
               <input type="hidden" name="player_{{ loop.index0 }}" value="{{ p }}"/>
             </div>
             {% endfor %}
