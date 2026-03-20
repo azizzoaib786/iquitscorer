@@ -115,15 +115,25 @@
                 </div>
               </div>
 
-              <input
-                name="delta_{{ loop.index0 }}"
-                data-player="{{ p }}"
-                type="number"
-                inputmode="decimal"
-                placeholder="0"
-                {% if r.locked %} disabled {% endif %}
-                class="w-24 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
-              />
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  onclick="toggleSign(this)"
+                  class="px-2 py-2 rounded-lg bg-gradient-to-r from-slate-400 to-slate-500 hover:from-slate-500 hover:to-slate-600 text-white font-bold shadow-sm transition-all"
+                  {% if r.locked %} disabled {% endif %}>
+                  +/-
+                </button>
+                <input
+                  name="delta_{{ loop.index0 }}"
+                  data-player="{{ p }}"
+                  type="number"
+                  pattern="[0-9]*"
+                  inputmode="numeric"
+                  placeholder="0"
+                  {% if r.locked %} disabled {% endif %}
+                  class="w-20 rounded-xl border-2 border-emerald-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 px-3 py-3 text-lg text-right font-bold disabled:bg-slate-100 disabled:text-slate-400 transition-all score-input"
+                />
+              </div>
               <input type="hidden" name="player_{{ loop.index0 }}" value="{{ p }}"/>
             </div>
             {% endfor %}
