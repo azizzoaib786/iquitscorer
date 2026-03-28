@@ -175,7 +175,7 @@ async def login(request: Request, response: Response, username: str = Form(...),
     if not user.get("is_active", True):
         return templates.TemplateResponse("login.html", {
             "request": request,
-            "error": "Your account has been deactivated. Contact Aziz Zoaib on +971 568 103175 to activate your account."
+            "error": "Your account has been deactivated. Contact Aziz Zoaib on +971 56 8103175 to activate your account."
         }, status_code=403)
     
     # Create session
