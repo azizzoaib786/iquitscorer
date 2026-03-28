@@ -292,10 +292,13 @@ def game_page(request: Request, game_id: str, round_id: Optional[str] = None):
 
 
 @app.get("/live/{game_id}", response_class=HTMLResponse)
-def live_game(request: Request, game_id: str, round_id: Optional[str] = None):
+def live_game(request: Request, game_id: str):
     # Read-only live view for spectators
     game = must_game(game_id)
 
+    # Get round_id from query parameter
+    round_id = request.query_params.get("round_id")
+    
     selected_round_id = round_id
     if not selected_round_id and game.get("rounds"):
         selected_round_id = game["rounds"][0]["round_id"]
