@@ -60,7 +60,8 @@ def create_admin_user():
         "user_id": uuid.uuid4().hex,
         "username": "admin",
         "password_hash": hash_password("xxx"),
-        "is_admin": True
+        "is_admin": True,
+        "is_active": True
     })
     print("Created admin user (username: admin, password: xxx)")
     print("IMPORTANT: Change the admin password after first login!")

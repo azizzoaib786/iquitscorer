@@ -17,7 +17,11 @@
       <div class="flex items-center gap-2">
         <span class="text-2xl">🎯</span>
         <h2 class="text-lg font-bold text-purple-900">Rounds</h2>
+        {% if is_expired %}
+          <span class="text-xs px-2 py-1 rounded-full bg-rose-200 text-rose-700 font-bold">EXPIRED</span>
+        {% endif %}
       </div>
+      {% if not is_expired %}
       <form
         class="flex gap-2"
         hx-post="/games/{{ game.game_id }}/rounds"
@@ -28,6 +32,11 @@
                class="w-40 sm:w-64 rounded-xl border-2 border-purple-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 px-3 py-2 transition-all"/>
         <button class="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-3 py-2 font-semibold shadow-md hover:shadow-lg transition-all">Add</button>
       </form>
+      {% else %}
+      <div class="text-xs text-rose-700 bg-rose-100 rounded-lg px-3 py-2">
+        ⏰ Game expired (5+ days old). No new rounds allowed.
+      </div>
+      {% endif %}
     </div>
 
     {% if game.rounds %}
@@ -61,6 +70,20 @@
               <button
                 class="rounded-xl px-3 py-2 font-bold border-2 shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-orange-600 to-red-600 text-white border-orange-600 hover:from-orange-700 hover:to-red-700">
                 🏁 End Round
+              </button>
+            </form>
+            {% endif %}
+
+            {% if user.is_admin %}
+            <form
+              hx-delete="/games/{{ game.game_id }}/rounds/{{ r.round_id }}"
+              hx-target="#round-panel"
+              hx-swap="outerHTML"
+              hx-confirm="Delete round '{{ r.name }}' and all scores? This cannot be undone."
+            >
+              <button
+                class="rounded-xl px-3 py-2 font-bold border-2 shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-rose-600 to-pink-600 text-white border-rose-600 hover:from-rose-700 hover:to-pink-700">
+                🗑️ Delete
               </button>
             </form>
             {% endif %}
@@ -206,3 +229,8 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Winner Modal (shown when all players are OUT) -->
+{% if winner_name %}
+  {% include "partials/winner_modal.html" %}
+{% endif %}

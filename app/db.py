@@ -73,6 +73,7 @@ def create_user(user_id: str, username: str, password_hash: str, is_admin: bool 
         "username": username,
         "password_hash": password_hash,
         "is_admin": is_admin,
+        "is_active": True,  # New users are active by default
     })
 
 
@@ -120,3 +121,23 @@ def update_user_password(user_id: str, new_password_hash: str) -> None:
         UpdateExpression="SET password_hash = :ph",
         ExpressionAttributeValues={":ph": new_password_hash}
     )
+
+
+def toggle_user_active(user_id: str, is_active: bool) -> None:
+    # Toggle user active status
+    users.update_item(
+        Key={"user_id": user_id},
+        UpdateExpression="SET is_active = :a",
+        ExpressionAttributeValues={":a": is_active}
+    )
+
+
+def list_all_users() -> List[Dict[str, Any]]:
+    # List all users (admin only)
+    resp = users.scan()
+    return resp.get("Items", [])
+
+
+def delete_user(user_id: str) -> None:
+    # Delete user (admin only)
+    users.delete_item(Key={"user_id": user_id})

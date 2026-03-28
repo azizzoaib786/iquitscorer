@@ -40,7 +40,12 @@
             {% for game in games %}
             <div class="bg-white rounded-xl border-2 border-amber-200 p-4 flex items-center justify-between hover:shadow-md transition-all">
               <div class="flex-1">
-                <div class="font-bold text-slate-800">{{ game.name }}</div>
+                <div class="font-bold text-slate-800">
+                  {{ game.name }}
+                  {% if game|is_expired %}
+                    <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-rose-200 text-rose-700 font-bold">EXPIRED</span>
+                  {% endif %}
+                </div>
                 <div class="text-xs text-slate-600">
                   Target: {{ game.target }} | 
                   Players: {{ game.players|length }} | 
@@ -70,6 +75,9 @@
           <p class="text-amber-700 text-sm">No games yet.</p>
           {% endif %}
         </div>
+
+        <!-- User Management -->
+        {% include "partials/user_management.html" %}
 
         <!-- Game Details Management -->
         <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-300 p-5">
