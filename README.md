@@ -54,8 +54,19 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 - Target score (default: 150)
 - Add positive/negative deltas each round
 - Players ≥ target score are OUT
-- Winner = lowest score when all OUT
+- Winner = last IN player (survives longest)
+- OUT players ranked by who stayed in longest
 - Games expire after 5 days
+
+## Recent Bug Fixes
+
+- ✅ Winner popup now shows the last IN player (correct winner logic)
+- ✅ OUT players ranked by who stayed in longest (not by score)
+- ✅ User activation/deactivation error message displays correctly on login
+- ✅ Game expiration enforced (5 days - no new rounds)
+- ✅ Admin controls for deleting users and rounds
+- ✅ Live view shows Active/Out player counts
+- ✅ Phone number formatting fixed (+971 56 8103175)
 
 ## Developer
 
