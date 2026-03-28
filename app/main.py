@@ -624,14 +624,18 @@ def end_round(request: Request, game_id: str, round_id: str = Form(...)):
     game2 = must_game(game_id)
     view = compute_view(game2, round_id)
     
-    # Check if all players are out and find winner
-    all_out = all(entry["is_out"] for entry in view["board"])
-    flash_msg = "Round ended and locked." + (" 🎉 Game Over! All players are out!" if all_out else "")
+    # Check if game is over and find winner
+    active_players = [entry for entry in view["board"] if not entry["is_out"]]
+    out_players = [entry for entry in view["board"] if entry["is_out"]]
+    
+    flash_msg = "Round ended and locked."
     winner_name = None
     winner_score = None
     
-    if all_out and view["board"]:
-        winner = min(view["board"], key=lambda x: x["total"])
+    # Winner is the last IN player (when only 1 active player remains)
+    if len(active_players) == 1 and len(out_players) > 0:
+        flash_msg += " 🎉 Game Over! Winner declared!"
+        winner = active_players[0]
         winner_name = winner["player"]
         winner_score = winner["total"]
     
@@ -669,16 +673,18 @@ def add_score(request: Request, game_id: str,
     game2 = must_game(game_id)
     view = compute_view(game2, round_id)
     
-    # Auto-detect game over and find winner
-    all_out = all(entry["is_out"] for entry in view["board"])
+    # Check if game is over and find winner
+    active_players = [entry for entry in view["board"] if not entry["is_out"]]
+    out_players = [entry for entry in view["board"] if entry["is_out"]]
+    
     flash_msg = None
     winner_name = None
     winner_score = None
     
-    if all_out and view["board"]:
-        flash_msg = "🎉 Game Over! All players reached the target!"
-        # Winner is player with lowest score
-        winner = min(view["board"], key=lambda x: x["total"])
+    # Winner is the last IN player (when only 1 active player remains)
+    if len(active_players) == 1 and len(out_players) > 0:
+        flash_msg = "🎉 Game Over! Winner is the last player standing!"
+        winner = active_players[0]
         winner_name = winner["player"]
         winner_score = winner["total"]
     
@@ -736,15 +742,18 @@ async def add_scores_batch(request: Request, game_id: str):
     game2 = must_game(game_id)
     view = compute_view(game2, round_id)
     
-    # Auto-detect game over and find winner
-    all_out = all(entry["is_out"] for entry in view["board"])
+    # Check if game is over and find winner
+    active_players = [entry for entry in view["board"] if not entry["is_out"]]
+    out_players = [entry for entry in view["board"] if entry["is_out"]]
+    
     flash_msg = None
     winner_name = None
     winner_score = None
     
-    if all_out and view["board"]:
-        flash_msg = "🎉 Game Over! All players reached the target!"
-        winner = min(view["board"], key=lambda x: x["total"])
+    # Winner is the last IN player (when only 1 active player remains)
+    if len(active_players) == 1 and len(out_players) > 0:
+        flash_msg = "🎉 Game Over! Winner is the last player standing!"
+        winner = active_players[0]
         winner_name = winner["player"]
         winner_score = winner["total"]
     elif added_count > 0:

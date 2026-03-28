@@ -85,10 +85,11 @@ def leaderboard(players: List[str], totals: Dict[str, int], target: int, events:
     # Sort active by score (lowest first)
     active = sorted([r for r in rows if not r["is_out"]], key=lambda r: r["total"])
     
-    # Sort OUT players by timestamp (who went out first)
+    # Sort OUT players by timestamp (who stayed in longest = went out last = better rank)
     out = sorted(
         [r for r in rows if r["is_out"]],
-        key=lambda r: (r["out_timestamp"] or "", r["total"])  # Sort by timestamp, then score
+        key=lambda r: (r["out_timestamp"] or "", r["total"]),
+        reverse=True  # Reverse so latest timestamp comes first
     )
 
     # Combine and assign ranks
