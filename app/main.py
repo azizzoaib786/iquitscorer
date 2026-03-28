@@ -195,19 +195,24 @@ def register_page(request: Request):
 
 
 @app.post("/register")
-async def register(response: Response, username: str = Form(...), password: str = Form(...)):
+async def register(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
     # Create new user
-    if get_user_by_username(username):
-        raise HTTPException(status_code=400, detail="Username already exists")
+    existing_user = get_user_by_username(username)
+    if existing_user:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Username already exists"
+        }, status_code=400)
     
     user_id = uuid.uuid4().hex
     password_hash = hash_password(password)
     create_user(user_id, username, password_hash, is_admin=False)
     
-    # Auto-login after registration
-    token = create_session_token(user_id)
-    response = RedirectResponse("/", status_code=303)
-    response.set_cookie(key="session", value=token, httponly=True, max_age=86400 * 7)
+    # Show success message - user needs admin activation
+    return templates.TemplateResponse("register.html", {
+        "request": request,
+        "success": f"Account created successfully! Contact Aziz Zoaib on +971 56 8103175 to activate your account before logging in."
+    })
     return response
 
 

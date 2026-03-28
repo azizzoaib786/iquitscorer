@@ -73,7 +73,7 @@ def create_user(user_id: str, username: str, password_hash: str, is_admin: bool 
         "username": username,
         "password_hash": password_hash,
         "is_admin": is_admin,
-        "is_active": True,  # New users are active by default
+        "is_active": is_admin,  # Admins active by default, regular users inactive
     })
 
 
