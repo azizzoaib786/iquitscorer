@@ -15,6 +15,12 @@
           <p class="text-violet-700">Login to continue</p>
         </div>
 
+        {% if error %}
+        <div class="mb-4 rounded-xl border-2 border-rose-300 bg-gradient-to-r from-rose-50 to-orange-50 text-rose-800 px-4 py-3 text-sm font-medium shadow-sm">
+          ⚠️ {{ error }}
+        </div>
+        {% endif %}
+
         <form method="post" action="/login" class="space-y-4">
           <div>
             <label class="block text-sm font-bold text-violet-900 mb-1">Username</label>
