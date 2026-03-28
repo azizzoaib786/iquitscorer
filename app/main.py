@@ -517,6 +517,32 @@ def remove_player(request: Request, game_id: str, player_name: str = Form(...)):
     })
 
 
+@app.post("/games/{game_id}/iquit/{player_name}", response_class=HTMLResponse)
+def declare_iquit(request: Request, game_id: str, player_name: str):
+    # Player declares "I Quit"
+    user, game = check_game_access(request, game_id)
+    
+    # Initialize iquit_declarations if not exists
+    iquit_declarations = game.get("iquit_declarations", {})
+    
+    # Increment counter for this player
+    iquit_declarations[player_name] = iquit_declarations.get(player_name, 0) + 1
+    
+    # Update game
+    update_game(game_id, "SET iquit_declarations = :iq", {":iq": iquit_declarations})
+    
+    game2 = must_game(game_id)
+    selected = request.query_params.get("round_id")
+    if not selected and game2.get("rounds"):
+        selected = game2["rounds"][0]["round_id"]
+    
+    view = compute_view(game2, selected)
+    return templates.TemplateResponse("partials/round_panel.html", {
+        "request": request, "user": user, "game": game2, "selected_round_id": selected, **view,
+        "flash": f"🎲 {player_name} declared I QUIT! (Total: {iquit_declarations[player_name]})"
+    })
+
+
 @app.post("/games/{game_id}/rounds", response_class=HTMLResponse)
 def add_round(request: Request, game_id: str, round_name: str = Form(...)):
     user, game = check_game_access(request, game_id)
