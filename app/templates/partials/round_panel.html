@@ -152,7 +152,9 @@
               {% if not is_out %}
               <button
                 type="button"
-                onclick="fetch('/games/{{ game.game_id }}/iquit/{{ p }}?round_id={{ r.round_id }}', {method: 'POST'}).then(() => location.reload())"
+                hx-post="/games/{{ game.game_id }}/iquit/{{ p }}?round_id={{ r.round_id }}"
+                hx-target="#round-panel"
+                hx-swap="outerHTML"
                 {% if r.locked %} disabled {% endif %}
                 class="shrink-0 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-40">
                 🎲 I QUIT
